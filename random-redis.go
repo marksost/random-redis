@@ -5,10 +5,12 @@ package main
 import (
 	// Standard lib
 	"fmt"
-	"math/rand"
 	"net"
+	"regexp"
+	"strconv"
+
 	// Third-party
-	// log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -54,6 +56,9 @@ func NewServer() (*RedisServer, error) {
 		status: STATUS_STARTING,
 	}
 
+	// Log server
+	log.WithField("server", s).Info("Attempting to start Redis server")
+
 	// Attempt to start the server
 	err = s.start()
 	if err != nil {
@@ -82,7 +87,7 @@ func (r *RedisServer) Stop() error {
 /* Begin Redis server info methods */
 
 // Address returns the address of the Redis server with the pattern of: {host}:{port}
-func (r *RedisServer) Address() string {
+func (r *RedisServer) Addr() string {
 	return fmt.Sprintf("%s:%d", r.Host(), r.Port())
 }
 
@@ -129,16 +134,38 @@ func (r *RedisServer) start() error {
 // getEmptyPort returns a number to be used as a new server's port
 // NOTE: Uses tcp to allow the kernel to give an open port
 func getEmptyPort() (int, error) {
-	for port := 0xFFFF + rand.Intn(1000); port < 0xFFFF+1000; port++ {
-		// Attempt to open a TCP listener on a port to determin if it's open or not
-		if l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ServerHost, port)); err == nil {
-			// Close listener
-			l.Close()
-			return port, nil
+	// Create regex for extracting port
+	r, _ := regexp.Compile("\\d+$")
+
+	// NOTE: Uses "port" 0 to allow the kernal to chose a port for itself
+	if l, err := net.Listen("tcp", fmt.Sprintf("%s:0", ServerHost)); err == nil {
+		// Close listener
+		defer l.Close()
+
+		// Use regex to extract port
+		port := r.FindString(l.Addr().String())
+
+		if len(port) != 0 {
+			return string2Int(port), nil
 		}
 	}
 
 	return 0, fmt.Errorf("No random ports were found")
+}
+
+// string2Int converts a string to an int
+func string2Int(v string) int {
+	return int(string2Int64(v))
+}
+
+// string2Int64 converts a string to an int64
+func string2Int64(v string) int64 {
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return i
 }
 
 /* End internal utility methods */
