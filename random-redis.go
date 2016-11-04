@@ -220,7 +220,6 @@ func getEmptyPort() (int, error) {
 		port := r.FindString(l.Addr().String())
 
 		if len(port) != 0 {
-			// return 22, nil
 			return string2Int(port), nil
 		}
 	}
