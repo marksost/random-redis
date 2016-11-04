@@ -65,7 +65,7 @@ var _ = Describe("random-redis.go", func() {
 
 		It("Should set the `status` property of the server", func() {
 			// Verify initial value
-			Expect(s.GetStatus()).To(Equal(STATUS_STARTING))
+			Expect(s.GetStatus()).To(Equal(STATUS_RUNNING))
 
 			// Call method
 			s.setStatus(STATUS_KILLED)
