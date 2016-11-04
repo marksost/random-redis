@@ -76,8 +76,6 @@ var _ = Describe("random-redis.go", func() {
 		})
 
 		It("Should start a new Redis server", func() {})
-
-		It("Should send an errors returned from a shell command to a channel", func() {})
 	})
 
 	Describe("Utility methods", func() {

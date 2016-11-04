@@ -185,7 +185,9 @@ func (s *RedisServer) start() error {
 	resp := s.cmd.Start()
 
 	// Wait for command to complete in a goroutine
-	go s.waitForCommand(ch)
+	go func() {
+		ch <- s.cmd.Wait()
+	}()
 
 	select {
 	// Handle start/wait errors
@@ -195,14 +197,6 @@ func (s *RedisServer) start() error {
 	case <-time.After(startTimeout):
 		return resp
 	}
-}
-
-// waitForCommand abstracts a goroutine function that waits for a possible
-// error to be returned from the command used to start a Redis server
-// If an error occurs, it's sent to a channel, otherwise `nil` is
-func (s *RedisServer) waitForCommand(ch chan error) {
-	// Send return value of `Wait` to channel
-	ch <- s.cmd.Wait()
 }
 
 // getNewCommand is used to form a new Redis server start command and return it
