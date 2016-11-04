@@ -56,11 +56,11 @@ var _ = Describe("random-redis.go", func() {
 
 		It("Should return the `status` property of the server", func() {
 			// Set predictable status
-			s.setStatus(STATUS_STOPPED)
+			s.setStatus(STATUS_KILLED)
 
 			// Verify method return value
 			Expect(s.GetStatus()).To(Not(Equal(STATUS_STARTING)))
-			Expect(s.GetStatus()).To(Equal(STATUS_STOPPED))
+			Expect(s.GetStatus()).To(Equal(STATUS_KILLED))
 		})
 
 		It("Should set the `status` property of the server", func() {
@@ -68,11 +68,11 @@ var _ = Describe("random-redis.go", func() {
 			Expect(s.GetStatus()).To(Equal(STATUS_STARTING))
 
 			// Call method
-			s.setStatus(STATUS_STOPPED)
+			s.setStatus(STATUS_KILLED)
 
 			// Verify method return value
 			Expect(s.GetStatus()).To(Not(Equal(STATUS_STARTING)))
-			Expect(s.GetStatus()).To(Equal(STATUS_STOPPED))
+			Expect(s.GetStatus()).To(Equal(STATUS_KILLED))
 		})
 
 		It("Should start a new Redis server", func() {})
