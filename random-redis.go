@@ -6,11 +6,14 @@ import (
 	// Standard lib
 	"fmt"
 	"net"
+	"os/exec"
 	"regexp"
 	"strconv"
+	"time"
 
 	// Third-party
 	log "github.com/Sirupsen/logrus"
+	"github.com/satori/go.uuid"
 )
 
 const (
@@ -23,13 +26,21 @@ const (
 type (
 	// Struct representing a single Redis server listening on a random port
 	RedisServer struct {
-		host   string // The host the Redis server is running on
-		port   int    // The port the Redis server is running on
-		status int    // The current status of the Redis server
+		cmd    *exec.Cmd // The command instance that runs the Redis server
+		host   string    // The host the Redis server is running on
+		id     string    // Unique ID for the Redis server
+		port   int       // The port the Redis server is running on
+		status int       // The current status of the Redis server
 	}
 )
 
 var (
+	// The location that all files relating to a Redis server
+	// should be located in
+	// NOTE: Should start with a leading slash but have no trailing slash
+	// NOTE: Public variable to allow package authors the ability
+	// to change this before starting the Redis server
+	RedisFileLocation string = "/tmp"
 	// Command to be run when starting a Redis server
 	// NOTE: Public variable to allow package authors the ability
 	// to change this before starting the Redis server
@@ -38,6 +49,8 @@ var (
 	// NOTE: Public variable to allow package authors the ability
 	// to change this before starting the Redis server
 	ServerHost string = "localhost"
+	// The time to wait for a new Redis server to start before checking for errors
+	startTimeout time.Duration = 200 * time.Millisecond
 )
 
 // NewServer attempts to create, start, and return a new Redis server
@@ -49,9 +62,14 @@ func NewServer() (*RedisServer, error) {
 		return nil, err
 	}
 
+	// Generate new ID
+	id := uuid.NewV4().String()
+
 	// Form new server
 	s := &RedisServer{
+		cmd:    getNewCommand(port, id),
 		host:   ServerHost,
+		id:     id,
 		port:   port,
 		status: STATUS_STARTING,
 	}
@@ -64,6 +82,12 @@ func NewServer() (*RedisServer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Set server status
+	s.setStatus(STATUS_RUNNING)
+
+	// Log running status
+	log.WithField("server", s).Info("Redis server running")
 
 	return s, nil
 }
@@ -94,6 +118,11 @@ func (r *RedisServer) Addr() string {
 // Host returns the host of the Redis server
 func (r *RedisServer) Host() string {
 	return r.host
+}
+
+// Id returns the unique ID of the Redis server
+func (r *RedisServer) Id() string {
+	return r.id
 }
 
 // Info returns the output of running an "Info" command on the Redis server
@@ -127,8 +156,53 @@ func (r *RedisServer) setStatus(status int) {
 
 // start is an internal method for starting a Redis server on a random port
 func (r *RedisServer) start() error {
-	// TO-DO: Fill this method in
-	return nil
+	// Check if server is already running
+	if r.GetStatus() == STATUS_RUNNING {
+		return fmt.Errorf("Attempted to start a Redis server that is already running")
+	}
+
+	// Make channel that listens for wait errors
+	ch := make(chan error)
+
+	// Start command
+	resp := r.cmd.Start()
+
+	// Wait for command to complete in a goroutine
+	go r.waitForCommand(ch)
+
+	select {
+	// Handle start/wait errors
+	case err := <-ch:
+		return fmt.Errorf("Error starting Redis server: %s", err.Error())
+	// Return the result of the start call after a specified timeout
+	case <-time.After(startTimeout):
+		return resp
+	}
+}
+
+// waitForCommand abstracts a goroutine function that waits for a possible
+// error to be returned from the command used to start a Redis server
+// If an error occurs, it's sent to a channel, otherwise `nil` is
+func (r *RedisServer) waitForCommand(ch chan error) {
+	// Check for errors from the command and return if one occurs
+	if err := r.cmd.Wait(); err != nil {
+		ch <- err
+		return
+	}
+
+	// Send a non-error to the channel
+	ch <- nil
+}
+
+// getNewCommand is used to form a new Redis server start command and return it
+// for use by a new Redis server
+func getNewCommand(port int, id string) *exec.Cmd {
+	return exec.Command(RedisCommand,
+		"--dbfilename", fmt.Sprintf("dump.%d.%s.rdb", port, id),
+		"--dir", RedisFileLocation,
+		"--pidfile", fmt.Sprintf("%s/random-redis.%d.%s.pid", RedisFileLocation, port, id),
+		"--port", fmt.Sprintf("%d", port),
+	)
 }
 
 // getEmptyPort returns a number to be used as a new server's port
@@ -146,6 +220,7 @@ func getEmptyPort() (int, error) {
 		port := r.FindString(l.Addr().String())
 
 		if len(port) != 0 {
+			// return 22, nil
 			return string2Int(port), nil
 		}
 	}
@@ -171,4 +246,16 @@ func string2Int64(v string) int64 {
 /* End internal utility methods */
 
 // NOTE: Provided for package compliance
-func main() {}
+func main() {
+	// Create a new server, checking for errors
+	s, err := NewServer()
+	if err != nil {
+		log.WithField("error", err.Error()).Fatal("Couldn't start server")
+	}
+
+	// Stop server, checking for errors
+	err = s.Stop()
+	if err != nil {
+		log.WithField("error", err.Error()).Fatal("Couldn't stop server")
+	}
+}

@@ -29,9 +29,7 @@ var _ = Describe("random-redis.go", func() {
 
 	Describe("RedisServer stuct methods", func() {
 		It("Should return a new server, operating on a random port", func() {})
-
 		It("Should flush all key/value pairs from the Redis server", func() {})
-
 		It("Should stop the Redis server", func() {})
 
 		It("Should return the address of the Redis server", func() {
@@ -42,6 +40,11 @@ var _ = Describe("random-redis.go", func() {
 		It("Should return the host of the Redis server", func() {
 			// Verify method return value
 			Expect(s.Host()).To(Equal(s.host))
+		})
+
+		It("Should return the ID of the Redis server", func() {
+			// Verify method return value
+			Expect(s.Id()).To(Equal(s.id))
 		})
 
 		It("Should return the result of an `Info` call to the Redis server", func() {})
@@ -73,9 +76,12 @@ var _ = Describe("random-redis.go", func() {
 		})
 
 		It("Should start a new Redis server", func() {})
+
+		It("Should send an errors returned from a shell command to a channel", func() {})
 	})
 
 	Describe("Utility methods", func() {
+		It("Should return a new shell command based on input", func() {})
 		It("Should return a psudo-random empty port for use by a new Redis server", func() {})
 
 		It("Should convert a string to an int", func() {
