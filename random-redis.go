@@ -20,7 +20,7 @@ const (
 	// Redis server statuses
 	STATUS_STARTING = 1
 	STATUS_RUNNING  = 2
-	STATUS_STOPPED  = 3
+	STATUS_KILLED   = 3
 )
 
 type (
@@ -74,12 +74,11 @@ func NewServer() (*RedisServer, error) {
 		status: STATUS_STARTING,
 	}
 
-	// Log server
+	// Log server start
 	log.WithField("server", s).Info("Attempting to start Redis server")
 
 	// Attempt to start the server
-	err = s.start()
-	if err != nil {
+	if err = s.start(); err != nil {
 		return nil, err
 	}
 
@@ -95,14 +94,32 @@ func NewServer() (*RedisServer, error) {
 /* Begin Redis server command methods */
 
 // Flush is used to flush all key/value pairs from a Redis server
-func (r *RedisServer) Flush() error {
+func (s *RedisServer) Flush() error {
 	// TO-DO: Fill this method in
 	return nil
 }
 
 // Stop attempts to stop a currently-running Redis server
-func (r *RedisServer) Stop() error {
-	// TO-DO: Fill this method in
+func (s *RedisServer) Stop() error {
+	// Check that Redis server is running
+	if s.GetStatus() != STATUS_RUNNING {
+		return fmt.Errorf("Attempted to stop a non-running Redis server")
+	}
+
+	// Log server stop
+	log.WithField("server", s).Info("Attempting to stop Redis server")
+
+	// Set server status
+	s.setStatus(STATUS_KILLED)
+
+	// Kill the process
+	if err := s.cmd.Process.Kill(); err != nil {
+		return err
+	}
+
+	// Log killed status
+	log.WithField("server", s).Info("Redis server killed")
+
 	return nil
 }
 
@@ -111,31 +128,31 @@ func (r *RedisServer) Stop() error {
 /* Begin Redis server info methods */
 
 // Address returns the address of the Redis server with the pattern of: {host}:{port}
-func (r *RedisServer) Addr() string {
-	return fmt.Sprintf("%s:%d", r.Host(), r.Port())
+func (s *RedisServer) Addr() string {
+	return fmt.Sprintf("%s:%d", s.Host(), s.Port())
 }
 
 // Host returns the host of the Redis server
-func (r *RedisServer) Host() string {
-	return r.host
+func (s *RedisServer) Host() string {
+	return s.host
 }
 
 // Id returns the unique ID of the Redis server
-func (r *RedisServer) Id() string {
-	return r.id
+func (s *RedisServer) Id() string {
+	return s.id
 }
 
 // Info returns the output of running an "Info" command on the Redis server
 // NOTE: the output will be returned as a map of strings
 // For more information on the "Info" command, see http://redis.io/commands/info
-func (r *RedisServer) Info() (map[string]string, error) {
+func (s *RedisServer) Info() (map[string]string, error) {
 	// TO-DO: Fill this method in
 	return nil, nil
 }
 
 // Port returns the port of the Redis server
-func (r *RedisServer) Port() int {
-	return r.port
+func (s *RedisServer) Port() int {
+	return s.port
 }
 
 /* End Redis server info methods */
@@ -145,19 +162,19 @@ func (r *RedisServer) Port() int {
 // GetStatus returns a server's internal status property
 // NOTE: It is advisable to check the value returned from this method
 // against one of the status contstants defined in this package
-func (r *RedisServer) GetStatus() int {
-	return r.status
+func (s *RedisServer) GetStatus() int {
+	return s.status
 }
 
 // setStatus sets a server's internal status property
-func (r *RedisServer) setStatus(status int) {
-	r.status = status
+func (s *RedisServer) setStatus(status int) {
+	s.status = status
 }
 
 // start is an internal method for starting a Redis server on a random port
-func (r *RedisServer) start() error {
+func (s *RedisServer) start() error {
 	// Check if server is already running
-	if r.GetStatus() == STATUS_RUNNING {
+	if s.GetStatus() == STATUS_RUNNING {
 		return fmt.Errorf("Attempted to start a Redis server that is already running")
 	}
 
@@ -165,10 +182,10 @@ func (r *RedisServer) start() error {
 	ch := make(chan error)
 
 	// Start command
-	resp := r.cmd.Start()
+	resp := s.cmd.Start()
 
 	// Wait for command to complete in a goroutine
-	go r.waitForCommand(ch)
+	go s.waitForCommand(ch)
 
 	select {
 	// Handle start/wait errors
@@ -183,15 +200,9 @@ func (r *RedisServer) start() error {
 // waitForCommand abstracts a goroutine function that waits for a possible
 // error to be returned from the command used to start a Redis server
 // If an error occurs, it's sent to a channel, otherwise `nil` is
-func (r *RedisServer) waitForCommand(ch chan error) {
-	// Check for errors from the command and return if one occurs
-	if err := r.cmd.Wait(); err != nil {
-		ch <- err
-		return
-	}
-
-	// Send a non-error to the channel
-	ch <- nil
+func (s *RedisServer) waitForCommand(ch chan error) {
+	// Send return value of `Wait` to channel
+	ch <- s.cmd.Wait()
 }
 
 // getNewCommand is used to form a new Redis server start command and return it
