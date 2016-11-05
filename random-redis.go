@@ -14,6 +14,7 @@ import (
 	// Third-party
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
+	"gopkg.in/redis.v5"
 )
 
 const (
@@ -26,11 +27,12 @@ const (
 type (
 	// Struct representing a single Redis server listening on a random port
 	RedisServer struct {
-		cmd    *exec.Cmd // The command instance that runs the Redis server
-		host   string    // The host the Redis server is running on
-		id     string    // Unique ID for the Redis server
-		port   int       // The port the Redis server is running on
-		status int       // The current status of the Redis server
+		client *redis.Client // Redis client for interacting with the Redis server
+		cmd    *exec.Cmd     // The command instance that runs the Redis server
+		host   string        // The host the Redis server is running on
+		id     string        // Unique ID for the Redis server
+		port   int           // The port the Redis server is running on
+		status int           // The current status of the Redis server
 	}
 )
 
@@ -94,9 +96,30 @@ func NewServer() (*RedisServer, error) {
 /* Begin Redis server command methods */
 
 // Flush is used to flush all key/value pairs from a Redis server
+// by running a `FlushAll` command
+// For more information on the `FlushAll`  command, see http://redis.io/commands/flushall
 func (s *RedisServer) Flush() error {
-	// TO-DO: Fill this method in
-	return nil
+	// Connect to Redis client if needed
+	err := s.connectToRedis()
+	if err != nil {
+		return err
+	}
+
+	// Return result of a `FlushAll` command to the Redis server
+	return s.client.FlushAll().Err()
+}
+
+// Ping returns the output of running a `Ping` command on the Redis server
+// For more information on the `Ping`  command, see http://redis.io/commands/ping
+func (s *RedisServer) Ping() error {
+	// Connect to Redis client if needed
+	err := s.connectToRedis()
+	if err != nil {
+		return err
+	}
+
+	// Return result of a `Ping` command to the Redis server
+	return s.client.Ping().Err()
 }
 
 // Stop attempts to stop a currently-running Redis server
@@ -142,22 +165,10 @@ func (s *RedisServer) Id() string {
 	return s.id
 }
 
-// Info returns the output of running an "Info" command on the Redis server
-// NOTE: the output will be returned as a map of strings
-// For more information on the "Info" command, see http://redis.io/commands/info
-func (s *RedisServer) Info() (map[string]string, error) {
-	// TO-DO: Fill this method in
-	return nil, nil
-}
-
 // Port returns the port of the Redis server
 func (s *RedisServer) Port() int {
 	return s.port
 }
-
-/* End Redis server info methods */
-
-/* Begin internal utility methods */
 
 // GetStatus returns a server's internal status property
 // NOTE: It is advisable to check the value returned from this method
@@ -169,6 +180,31 @@ func (s *RedisServer) GetStatus() int {
 // setStatus sets a server's internal status property
 func (s *RedisServer) setStatus(status int) {
 	s.status = status
+}
+
+/* End Redis server info methods */
+
+/* Begin internal utility methods */
+
+// connectToRedis attempts to connect to a currently-running Redis server
+// and sets a `client` property on it for future use
+func (s *RedisServer) connectToRedis() error {
+	// Check that the Redis server is running
+	if s.GetStatus() != STATUS_RUNNING {
+		return fmt.Errorf("Attempted to connect to a non-running Redis server")
+	}
+
+	// Check if client has already been set up
+	if s.client != nil {
+		return nil
+	}
+
+	// Create Redis client based on Redis server
+	s.client = redis.NewClient(&redis.Options{
+		Addr: s.Addr(),
+	})
+
+	return nil
 }
 
 // start is an internal method for starting a Redis server on a random port
@@ -255,6 +291,12 @@ func main() {
 	s, err := NewServer()
 	if err != nil {
 		log.WithField("error", err.Error()).Fatal("Couldn't start server")
+	}
+
+	// Attempt to ping server
+	err = s.Ping()
+	if err != nil {
+		log.WithField("error", err.Error()).Fatal("Couldn't ping server")
 	}
 
 	// Stop server, checking for errors
