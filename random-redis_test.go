@@ -2,9 +2,6 @@
 package main
 
 import (
-	// Standard lib
-	// "fmt"
-
 	// Third-party
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,27 +10,100 @@ import (
 
 var _ = Describe("random-redis.go", func() {
 	var (
+		// Initial Redis file location to reset to after each test
+		initialRedisFileLocation string
+		// Initial server host to reset to after each test
+		initialServerHost string
+		// Error to use throughout tests
+		err error
 		// Test Redis server
 		s *RedisServer
 	)
 
+	BeforeEach(func() {
+		// Store initial value for the Redis file location
+		initialRedisFileLocation = RedisFileLocation
+
+		// Store initial value for the server host
+		initialServerHost = ServerHost
+	})
+
+	AfterEach(func() {
+		// Restore Redis file location to initial value
+		RedisFileLocation = initialRedisFileLocation
+
+		// Restore server host to initial value
+		ServerHost = initialServerHost
+	})
+
 	// Spec for the RedisServer struct and it's methods
 	Describe("RedisServer", func() {
 		// Spec for the NewServer method
-		Describe("`NewServer` method", func() {})
+		Describe("`NewServer` method", func() {
+			Context("Cannot get an empty port", func() {
+				BeforeEach(func() {
+					// Set invalid server host
+					ServerHost = "invalid-address"
+				})
+
+				It("Returns an error", func() {
+					// Call method
+					s, err := NewServer()
+
+					// Verify return values
+					Expect(s).To(BeNil())
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("Cannot start the redis server", func() {
+				BeforeEach(func() {
+					// Set invalid Redis file location
+					RedisFileLocation = "/foo/bar/baz"
+				})
+
+				It("Returns an error", func() {
+					// Call method
+					s, err := NewServer()
+
+					// Verify return values
+					Expect(s).To(BeNil())
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("The server is started", func() {
+				AfterEach(func() {
+					// Stop server
+					s.Stop()
+				})
+
+				It("Returns the new Redis server", func() {
+					// Call method
+					s, err = NewServer()
+
+					// Verify return values
+					Expect(s).To(Not(BeNil()))
+					Expect(err).To(Not(HaveOccurred()))
+
+					// Verify status was set
+					Expect(s.GetStatus()).To(Equal(STATUS_RUNNING))
+				})
+			})
+		})
 
 		// Spec for the RedisServer's command methods
 		Describe("Redis server command methods", func() {
-			Describe("`Flush` method", func() {
-				BeforeEach(func() {
-					// Set server to a struct with predictable properties
-					s = &RedisServer{
-						host:   ServerHost,
-						port:   1234,
-						status: STATUS_RUNNING,
-					}
-				})
+			BeforeEach(func() {
+				// Set server to a struct with predictable properties
+				s = &RedisServer{
+					host:   ServerHost,
+					port:   1234,
+					status: STATUS_RUNNING,
+				}
+			})
 
+			Describe("`Flush` method", func() {
 				Context("Cannot connect to the Redis server via a client", func() {
 					BeforeEach(func() {
 						// Set status
@@ -66,9 +136,73 @@ var _ = Describe("random-redis.go", func() {
 				})
 			})
 
-			Describe("`Ping` method", func() {})
+			Describe("`Ping` method", func() {
+				Context("Cannot connect to the Redis server via a client", func() {
+					BeforeEach(func() {
+						// Set status
+						// NOTE: Forces an error from `connectToRedis`
+						s.setStatus(STATUS_STARTING)
+					})
 
-			Describe("`Stop` method", func() {})
+					It("Returns an error", func() {
+						// Call method
+						err := s.Ping()
+
+						// Verify return value
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("Can connect to the Redis server via a client", func() {
+					BeforeEach(func() {
+						// Set valid client
+						s.client = redis.NewClient(&redis.Options{Addr: s.Addr()})
+					})
+
+					It("Returns an error if one occurred from the `Ping` method of the Redis client", func() {
+						// Call method
+						err := s.Ping()
+
+						// Verify return value
+						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
+
+			Describe("`Stop` method", func() {
+				BeforeEach(func() {
+					// Set status
+					s.setStatus(STATUS_STARTING)
+				})
+
+				Context("The server is not already running", func() {
+					It("Returns an error", func() {
+						// Call method
+						err := s.Stop()
+
+						// Verify return value
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("The server is stopped", func() {
+					BeforeEach(func() {
+						// Use `NewServer` to create a server
+						s, err = NewServer()
+					})
+
+					It("Returns nil", func() {
+						// Call method
+						err := s.Stop()
+
+						// Verify return value
+						Expect(err).To(Not(HaveOccurred()))
+
+						// Verify status was set
+						Expect(s.GetStatus()).To(Equal(STATUS_KILLED))
+					})
+				})
+			})
 		})
 
 		// Spec for the RedisServer's info methods
@@ -235,21 +369,6 @@ var _ = Describe("random-redis.go", func() {
 
 	// Spec for helper methods for this package
 	Describe("Helper methods", func() {
-		var (
-			// Initial server host to reset to after each test
-			initialServerHost string
-		)
-
-		BeforeEach(func() {
-			// Store initial value for the server host
-			initialServerHost = ServerHost
-		})
-
-		AfterEach(func() {
-			// Restore server host to initial value
-			ServerHost = initialServerHost
-		})
-
 		It("Returns a new start command based on input", func() {
 			// Call method
 			cmd := getNewCommand(1234, "mock-id")
@@ -279,10 +398,12 @@ var _ = Describe("random-redis.go", func() {
 			})
 
 			Context("When no ports are free on a network device", func() {
-				It("Returns an error", func() {
+				BeforeEach(func() {
 					// Set invalid server host
 					ServerHost = "invalid-address"
+				})
 
+				It("Returns an error", func() {
 					// Call method
 					port, err := getEmptyPort()
 

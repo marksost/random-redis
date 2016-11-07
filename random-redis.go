@@ -135,10 +135,8 @@ func (s *RedisServer) Stop() error {
 	// Set server status
 	s.setStatus(STATUS_KILLED)
 
-	// Kill the process
-	if err := s.cmd.Process.Kill(); err != nil {
-		return err
-	}
+	// Attempt to kill the process
+	s.cmd.Process.Kill()
 
 	// Log killed status
 	log.WithField("server", s).Info("Redis server killed")
