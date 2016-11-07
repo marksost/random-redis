@@ -284,22 +284,4 @@ func string2Int64(v string) int64 {
 /* End internal utility methods */
 
 // NOTE: Provided for package compliance
-func main() {
-	// Create a new server, checking for errors
-	s, err := NewServer()
-	if err != nil {
-		log.WithField("error", err.Error()).Fatal("Couldn't start server")
-	}
-
-	// Attempt to ping server
-	err = s.Ping()
-	if err != nil {
-		log.WithField("error", err.Error()).Fatal("Couldn't ping server")
-	}
-
-	// Stop server, checking for errors
-	err = s.Stop()
-	if err != nil {
-		log.WithField("error", err.Error()).Fatal("Couldn't stop server")
-	}
-}
+func main() {}
