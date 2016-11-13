@@ -1,1 +1,6 @@
+# Compiled files
+random-redis
+
+# Coverage reports
+*.out
 *.coverprofile
