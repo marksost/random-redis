@@ -284,4 +284,4 @@ func string2Int64(v string) int64 {
 /* End internal utility methods */
 
 // NOTE: Provided for package compliance
-func main() {}
+// func main() {}
