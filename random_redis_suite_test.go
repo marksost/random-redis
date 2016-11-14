@@ -1,5 +1,5 @@
 // Test suite setup for the random-redis package
-package main
+package randomredis
 
 import (
 	// Standard lib

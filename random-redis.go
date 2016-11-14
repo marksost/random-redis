@@ -1,6 +1,6 @@
 // random-redis is a utility for starting and stopping Redis servers on random ports
 // Useful for testing applications that utilize Redis within code to provide predictable i/o
-package main
+package randomredis
 
 import (
 	// Standard lib
@@ -284,4 +284,4 @@ func string2Int64(v string) int64 {
 /* End internal utility methods */
 
 // NOTE: Provided for package compliance
-// func main() {}
+func main() {}

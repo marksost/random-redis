@@ -1,5 +1,5 @@
 // Tests the random-redis.go file
-package main
+package randomredis
 
 import (
 	// Third-party
