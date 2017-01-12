@@ -5,14 +5,12 @@ package randomredis
 import (
 	// Standard lib
 	"fmt"
-	"net"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"time"
 
 	// Third-party
 	log "github.com/Sirupsen/logrus"
+	goutils "github.com/marksost/go-utils"
 	"github.com/satori/go.uuid"
 	"gopkg.in/redis.v5"
 )
@@ -58,8 +56,11 @@ var (
 // NewServer attempts to create, start, and return a new Redis server
 // operating on a random port
 func NewServer() (*RedisServer, error) {
+	// Set goutils server host
+	goutils.ServerHost = ServerHost
+
 	// Get random port
-	port, err := getEmptyPort()
+	port, err := goutils.GetEmptyPort()
 	if err != nil {
 		return nil, err
 	}
@@ -242,43 +243,6 @@ func getNewCommand(port int, id string) *exec.Cmd {
 		"--pidfile", fmt.Sprintf("%s/random-redis.%d.%s.pid", RedisFileLocation, port, id),
 		"--port", fmt.Sprintf("%d", port),
 	)
-}
-
-// getEmptyPort returns a number to be used as a new server's port
-// NOTE: Uses tcp to allow the kernel to give an open port
-func getEmptyPort() (int, error) {
-	// Create regex for extracting port
-	r, _ := regexp.Compile("\\d+$")
-
-	// NOTE: Uses "port" 0 to allow the kernal to chose a port for itself
-	if l, err := net.Listen("tcp", fmt.Sprintf("%s:0", ServerHost)); err == nil {
-		// Close listener
-		defer l.Close()
-
-		// Use regex to extract port
-		port := r.FindString(l.Addr().String())
-
-		if len(port) != 0 {
-			return string2Int(port), nil
-		}
-	}
-
-	return 0, fmt.Errorf("No random ports were found")
-}
-
-// string2Int converts a string to an int
-func string2Int(v string) int {
-	return int(string2Int64(v))
-}
-
-// string2Int64 converts a string to an int64
-func string2Int64(v string) int64 {
-	i, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		return 0
-	}
-
-	return i
 }
 
 /* End internal utility methods */
