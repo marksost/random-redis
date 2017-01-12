@@ -3,6 +3,7 @@ package randomredis
 
 import (
 	// Third-party
+	goutils "github.com/marksost/go-utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gopkg.in/redis.v5"
@@ -343,7 +344,7 @@ var _ = Describe("random-redis.go", func() {
 				Context("The server is started", func() {
 					BeforeEach(func() {
 						// Get random port
-						port, err := getEmptyPort()
+						port, err := goutils.GetEmptyPort()
 						if err != nil {
 							panic("Error getting an empty port. Testing cannot continue. Error was: " + err.Error())
 						}
@@ -383,69 +384,6 @@ var _ = Describe("random-redis.go", func() {
 			Expect(cmd.Args[6]).To(Equal(RedisFileLocation + "/random-redis.1234.mock-id.pid"))
 			Expect(cmd.Args[7]).To(Equal("--port"))
 			Expect(cmd.Args[8]).To(Equal("1234"))
-		})
-
-		Describe("getEmptyPort", func() {
-			Context("When one or more ports are free on a network device", func() {
-				It("Returns the port", func() {
-					// Call method
-					port, err := getEmptyPort()
-
-					// Verify return values
-					Expect(port).To(Not(Equal(0)))
-					Expect(err).To(Not(HaveOccurred()))
-				})
-			})
-
-			Context("When no ports are free on a network device", func() {
-				BeforeEach(func() {
-					// Set invalid server host
-					ServerHost = "invalid-address"
-				})
-
-				It("Returns an error", func() {
-					// Call method
-					port, err := getEmptyPort()
-
-					// Verify return values
-					Expect(port).To(Equal(0))
-					Expect(err).To(HaveOccurred())
-				})
-			})
-		})
-
-		It("Converts a string to an int", func() {
-			// Set test data
-			data := map[string]int{
-				"foo":  0,
-				"1234": 1234,
-			}
-
-			// Loop through test data
-			for input, expected := range data {
-				// Call method
-				actual := string2Int(input)
-
-				// Verify result
-				Expect(actual).To(Equal(expected))
-			}
-		})
-
-		It("Converts a string to an int64", func() {
-			// Set test data
-			data := map[string]int64{
-				"foo":  0,
-				"1234": 1234,
-			}
-
-			// Loop through test data
-			for input, expected := range data {
-				// Call method
-				actual := string2Int64(input)
-
-				// Verify result
-				Expect(actual).To(Equal(expected))
-			}
 		})
 	})
 })
