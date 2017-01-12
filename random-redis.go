@@ -160,7 +160,7 @@ func (s *RedisServer) Host() string {
 }
 
 // Id returns the unique ID of the Redis server
-func (s *RedisServer) Id() string {
+func (s *RedisServer) ID() string {
 	return s.id
 }
 

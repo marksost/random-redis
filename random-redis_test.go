@@ -227,7 +227,7 @@ var _ = Describe("random-redis.go", func() {
 			})
 
 			It("Returns a Redis server's ID", func() {
-				Expect(s.Id()).To(Equal("mock-id"))
+				Expect(s.ID()).To(Equal("mock-id"))
 			})
 
 			It("Returns a Redis server's port", func() {
