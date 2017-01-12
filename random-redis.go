@@ -149,7 +149,7 @@ func (s *RedisServer) Stop() error {
 
 /* Begin Redis server info methods */
 
-// Address returns the address of the Redis server with the pattern of: {host}:{port}
+// Addr returns the address of the Redis server with the pattern of: {host}:{port}
 func (s *RedisServer) Addr() string {
 	return fmt.Sprintf("%s:%d", s.Host(), s.Port())
 }
@@ -159,7 +159,7 @@ func (s *RedisServer) Host() string {
 	return s.host
 }
 
-// Id returns the unique ID of the Redis server
+// ID returns the unique ID of the Redis server
 func (s *RedisServer) ID() string {
 	return s.id
 }
