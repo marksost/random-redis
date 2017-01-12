@@ -88,7 +88,7 @@ var _ = Describe("random-redis.go", func() {
 					Expect(err).To(Not(HaveOccurred()))
 
 					// Verify status was set
-					Expect(s.GetStatus()).To(Equal(STATUS_RUNNING))
+					Expect(s.GetStatus()).To(Equal(StatusRunning))
 				})
 			})
 		})
@@ -100,7 +100,7 @@ var _ = Describe("random-redis.go", func() {
 				s = &RedisServer{
 					host:   ServerHost,
 					port:   1234,
-					status: STATUS_RUNNING,
+					status: StatusRunning,
 				}
 			})
 
@@ -109,7 +109,7 @@ var _ = Describe("random-redis.go", func() {
 					BeforeEach(func() {
 						// Set status
 						// NOTE: Forces an error from `connectToRedis`
-						s.setStatus(STATUS_STARTING)
+						s.setStatus(StatusStarting)
 					})
 
 					It("Returns an error", func() {
@@ -142,7 +142,7 @@ var _ = Describe("random-redis.go", func() {
 					BeforeEach(func() {
 						// Set status
 						// NOTE: Forces an error from `connectToRedis`
-						s.setStatus(STATUS_STARTING)
+						s.setStatus(StatusStarting)
 					})
 
 					It("Returns an error", func() {
@@ -173,7 +173,7 @@ var _ = Describe("random-redis.go", func() {
 			Describe("`Stop` method", func() {
 				BeforeEach(func() {
 					// Set status
-					s.setStatus(STATUS_STARTING)
+					s.setStatus(StatusStarting)
 				})
 
 				Context("The server is not already running", func() {
@@ -200,7 +200,7 @@ var _ = Describe("random-redis.go", func() {
 						Expect(err).To(Not(HaveOccurred()))
 
 						// Verify status was set
-						Expect(s.GetStatus()).To(Equal(STATUS_KILLED))
+						Expect(s.GetStatus()).To(Equal(StatusKilled))
 					})
 				})
 			})
@@ -214,7 +214,7 @@ var _ = Describe("random-redis.go", func() {
 					host:   "mock-host",
 					id:     "mock-id",
 					port:   1234,
-					status: STATUS_STARTING,
+					status: StatusStarting,
 				}
 			})
 
@@ -236,10 +236,10 @@ var _ = Describe("random-redis.go", func() {
 
 			It("Gets and sets a Redis server's status", func() {
 				// Reset status
-				s.setStatus(STATUS_KILLED)
+				s.setStatus(StatusKilled)
 
 				// Verify status was updated
-				Expect(s.GetStatus()).To(Equal(STATUS_KILLED))
+				Expect(s.GetStatus()).To(Equal(StatusKilled))
 			})
 		})
 
@@ -251,14 +251,14 @@ var _ = Describe("random-redis.go", func() {
 					s = &RedisServer{
 						host:   "mock-host",
 						port:   1234,
-						status: STATUS_RUNNING,
+						status: StatusRunning,
 					}
 				})
 
 				Context("The server is not running", func() {
 					BeforeEach(func() {
 						// Reset status
-						s.setStatus(STATUS_STARTING)
+						s.setStatus(StatusStarting)
 					})
 
 					It("Returns an error", func() {
@@ -304,14 +304,14 @@ var _ = Describe("random-redis.go", func() {
 					// Set server to a struct with predictable properties
 					s = &RedisServer{
 						host:   ServerHost,
-						status: STATUS_STARTING,
+						status: StatusStarting,
 					}
 				})
 
 				Context("The server is already running", func() {
 					BeforeEach(func() {
 						// Reset status
-						s.setStatus(STATUS_RUNNING)
+						s.setStatus(StatusRunning)
 					})
 
 					It("Returns an error", func() {

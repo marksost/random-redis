@@ -1,4 +1,4 @@
-// random-redis is a utility for starting and stopping Redis servers on random ports
+// Package randomredis is a utility for starting and stopping Redis servers on random ports
 // Useful for testing applications that utilize Redis within code to provide predictable i/o
 package randomredis
 
@@ -17,13 +17,13 @@ import (
 
 const (
 	// Redis server statuses
-	STATUS_STARTING = 1
-	STATUS_RUNNING  = 2
-	STATUS_KILLED   = 3
+	StatusStarting = 1
+	StatusRunning  = 2
+	StatusKilled   = 3
 )
 
 type (
-	// Struct representing a single Redis server listening on a random port
+	// RedisServer is a struct representing a single Redis server listening on a random port
 	RedisServer struct {
 		client *redis.Client // Redis client for interacting with the Redis server
 		cmd    *exec.Cmd     // The command instance that runs the Redis server
@@ -35,22 +35,22 @@ type (
 )
 
 var (
-	// The location that all files relating to a Redis server
-	// should be located in
+	// RedisFileLocation represents the location that all files relating
+	// to a Redis server should be located in
 	// NOTE: Should start with a leading slash but have no trailing slash
 	// NOTE: Public variable to allow package authors the ability
 	// to change this before starting the Redis server
-	RedisFileLocation string = "/tmp"
-	// Command to be run when starting a Redis server
+	RedisFileLocation = "/tmp"
+	// RedisCommand represents the command to be run when starting a Redis server
 	// NOTE: Public variable to allow package authors the ability
 	// to change this before starting the Redis server
-	RedisCommand string = "redis-server"
-	// The host to run the Redis server on
+	RedisCommand = "redis-server"
+	// ServerHost is the host to run the Redis server on
 	// NOTE: Public variable to allow package authors the ability
 	// to change this before starting the Redis server
-	ServerHost string = "localhost"
-	// The time to wait for a new Redis server to start before checking for errors
-	startTimeout time.Duration = 200 * time.Millisecond
+	ServerHost = "localhost"
+	// startTimeout is the time to wait for a new Redis server to start before checking for errors
+	startTimeout = 200 * time.Millisecond
 )
 
 // NewServer attempts to create, start, and return a new Redis server
@@ -74,7 +74,7 @@ func NewServer() (*RedisServer, error) {
 		host:   ServerHost,
 		id:     id,
 		port:   port,
-		status: STATUS_STARTING,
+		status: StatusStarting,
 	}
 
 	// Log server start
@@ -86,7 +86,7 @@ func NewServer() (*RedisServer, error) {
 	}
 
 	// Set server status
-	s.setStatus(STATUS_RUNNING)
+	s.setStatus(StatusRunning)
 
 	// Log running status
 	log.WithField("server", s).Info("Redis server running")
@@ -126,7 +126,7 @@ func (s *RedisServer) Ping() error {
 // Stop attempts to stop a currently-running Redis server
 func (s *RedisServer) Stop() error {
 	// Check that Redis server is running
-	if s.GetStatus() != STATUS_RUNNING {
+	if s.GetStatus() != StatusRunning {
 		return fmt.Errorf("Attempted to stop a non-running Redis server")
 	}
 
@@ -134,7 +134,7 @@ func (s *RedisServer) Stop() error {
 	log.WithField("server", s).Info("Attempting to stop Redis server")
 
 	// Set server status
-	s.setStatus(STATUS_KILLED)
+	s.setStatus(StatusKilled)
 
 	// Attempt to kill the process
 	s.cmd.Process.Kill()
@@ -189,7 +189,7 @@ func (s *RedisServer) setStatus(status int) {
 // and sets a `client` property on it for future use
 func (s *RedisServer) connectToRedis() error {
 	// Check that the Redis server is running
-	if s.GetStatus() != STATUS_RUNNING {
+	if s.GetStatus() != StatusRunning {
 		return fmt.Errorf("Attempted to connect to a non-running Redis server")
 	}
 
@@ -209,7 +209,7 @@ func (s *RedisServer) connectToRedis() error {
 // start is an internal method for starting a Redis server on a random port
 func (s *RedisServer) start() error {
 	// Check if server is already running
-	if s.GetStatus() == STATUS_RUNNING {
+	if s.GetStatus() == StatusRunning {
 		return fmt.Errorf("Attempted to start a Redis server that is already running")
 	}
 
