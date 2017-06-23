@@ -9,9 +9,9 @@ import (
 	"time"
 
 	// Third-party
-	log "github.com/Sirupsen/logrus"
 	goutils "github.com/marksost/go-utils"
 	"github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/redis.v5"
 )
 
