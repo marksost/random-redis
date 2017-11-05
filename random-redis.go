@@ -16,9 +16,12 @@ import (
 )
 
 const (
-	StatusStarting = 1 // Status value for a starting server
-	StatusRunning  = 2 // Status value for a running server
-	StatusKilled   = 3 // Status value for a killed server
+	// StatusStarting is a value for a starting server
+	StatusStarting = 1
+	// StatusRunning is a value for a running server
+	StatusRunning = 2
+	// StatusKilled is a value for a killed server
+	StatusKilled = 3
 )
 
 type (
