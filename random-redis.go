@@ -16,10 +16,9 @@ import (
 )
 
 const (
-	// Redis server statuses
-	StatusStarting = 1
-	StatusRunning  = 2
-	StatusKilled   = 3
+	StatusStarting = 1 // Status value for a starting server
+	StatusRunning  = 2 // Status value for a running server
+	StatusKilled   = 3 // Status value for a killed server
 )
 
 type (
